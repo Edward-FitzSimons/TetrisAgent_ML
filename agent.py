@@ -7,6 +7,7 @@
 #           Ben Harvey
 
 import curses as cs
+import time
 import numpy as np
 import random as rnd
 import os
@@ -50,6 +51,7 @@ def play_game():
             stdscr.clear()
             stdscr.addstr(str(env))
             stdscr.addstr('reward: ' + str(reward))
+            time.sleep(.5) #sleep for 1 second, remove when not viewing bot
             
     return db
 

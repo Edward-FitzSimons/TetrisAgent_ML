@@ -1,21 +1,7 @@
+# Creating an Agent to Intelligently Play Tetris
+The purpose of this project is to create an agent that can play the game Tetris by using Reinforcement and Q-Learning methods. This projects environment is based largely off the contributions of Jay Butera and his "Tetris RL" project. Installation instructions for the environment can be found on his Git Repo page [here.](https://github.com/jaybutera/tetrisRL)
+
 ![TETRIS RL](https://github.com/jaybutera/tetris-environment/blob/master/tetrisRL_logo.png)
-
-[![PyPI
-version](https://badge.fury.io/py/tetrisrl.svg)](https://badge.fury.io/py/tetrisrl)
-
-## Installation
-You need to have [pytorch](http://pytorch.org/) pre-installed. Easy to use
-download scripts can be found on their website.
-
-```bash
-$ git clone https://github.com/jaybutera/tetrisRL
-$ cd tetrisRL
-$ python setup.py install
-```
-or
-```bash
-$ pip install tetrisrl
-```
 
 ## Layout
 * dqn_agent.py - DQN reinforcement learning agent trains on tetris
@@ -24,37 +10,6 @@ $ pip install tetrisrl
 * run_model.py - Evaluate a saved agent model on a visual game of tetris (i.e.)
 ```bash
 $ python run_model.py checkpoint.pth.tar
-```
-
-## Usage
-
-### Using the Environment
-The interface is similar to an [OpenAI Gym](https://gym.openai.com/docs) environment. 
-
-Initialize the Tetris RL environment
-
-```python
-from engine import TetrisEngine
-
-width, height = 10, 20
-env = TetrisEngine(width, height)
-```
-
-Simulation loop
-```python
-# Reset the environment
-obs = env.clear()
-
-while True:
-    # Get an action from a theoretical AI agent
-    action = agent(obs)
-
-    # Sim step takes action and returns results
-    obs, reward, done = env.step(action)
-
-    # Done when game is lost
-    if done:
-        break
 ```
 
 ### Play Tetris for Training Data

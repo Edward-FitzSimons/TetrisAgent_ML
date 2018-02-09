@@ -10,7 +10,7 @@ import curses as cs
 import numpy as np
 import random as rnd
 import os
-from engine import TetrisEngine as te
+from engine import TetrisEngine
 
 # This is being modeled based on the
 # user engine, where the user plays
@@ -23,7 +23,7 @@ def play_game():
     db = []
     
     # initial rendering
-    stdscr.addstr(str(te.env))
+    stdscr.addstr(str(env))
     
     done = False
     # Global Action
@@ -51,7 +51,7 @@ def play_game():
             stdscr.addstr(str(env))
             stdscr.addstr('reward: ' + str(reward))
             
-    return te.db
+    return db
 
 def play_again():
    
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     # Init environment
     width, height = 10, 20 # standard tetris friends rules
-    env = te(width, height)
+    env = TetrisEngine(width, height)
 
     # Play games on repeat
     while True:

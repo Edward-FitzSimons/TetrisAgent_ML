@@ -51,7 +51,7 @@ def play_game():
             stdscr.clear()
             stdscr.addstr(str(env))
             stdscr.addstr('reward: ' + str(reward))
-            #time.sleep(.5) #sleep for .5 seconds, remove when not viewing bot
+            time.sleep(.25) #sleep for .25 seconds, remove when not viewing bot
             
     return db
 

@@ -20,7 +20,6 @@ def play_game():
     #Grab environment
     
     # store play information
-    db = te.db
     db = []
     
     # initial rendering

@@ -72,7 +72,7 @@ def save_game():
 
 def terminate():
     cs.nocbreak()
-    cs.stdscr.keypad(False)
+    stdscr.keypad(False)
     cs.echo()
     cs.endwin()
     

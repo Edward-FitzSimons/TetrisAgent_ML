@@ -1,8 +1,6 @@
 # Creating an Agent to Intelligently Play Tetris
 The purpose of this project is to create an agent that can play the game Tetris by using Reinforcement and Q-Learning methods. This projects environment is based largely off the contributions of Jay Butera and his "Tetris RL" project. Installation instructions for the environment can be found on his Git Repo page [here.](https://github.com/jaybutera/tetrisRL)
 
-![TETRIS RL](https://github.com/jaybutera/tetris-environment/blob/master/tetrisRL_logo.png)
-
 ## Layout
 * dqn_agent.py - DQN reinforcement learning agent trains on tetris
 * supervised_agent.py - The same convolutional model as DQN trains on a dataset of user playthroughs

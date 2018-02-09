@@ -41,7 +41,7 @@ def play_game():
     
     while not done:
             action= 6
-            action = rnd.randint(1,5)
+            action = rnd.randint(1,6)
             
             # Game Step
             state, reward, done = env.step(action)
@@ -51,7 +51,7 @@ def play_game():
             stdscr.clear()
             stdscr.addstr(str(env))
             stdscr.addstr('reward: ' + str(reward))
-            time.sleep(.5) #sleep for 1 second, remove when not viewing bot
+            #time.sleep(.5) #sleep for .5 seconds, remove when not viewing bot
             
     return db
 
@@ -81,7 +81,7 @@ def terminate():
 def init():
     cs.noecho()
     cs.halfdelay(7)
-    stdscr.keypad(True)
+    stdscr.keypad(False)
 
 if __name__ == '__main__':
     # Curses standard screen

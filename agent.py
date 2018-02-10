@@ -7,7 +7,6 @@
 #           Ben Harvey
 
 import curses as cs
-import time
 import numpy as np
 import random as rnd
 import os
@@ -41,6 +40,7 @@ def play_game():
     
     while not done:
             action= 6
+            key = stdscr.getch() # The only reason this is here is to add a delay
             action = rnd.randint(1,6)
             
             # Game Step
@@ -51,7 +51,6 @@ def play_game():
             stdscr.clear()
             stdscr.addstr(str(env))
             stdscr.addstr('reward: ' + str(reward))
-            time.sleep(.25) #sleep for .25 seconds, remove when not viewing bot
             
     return db
 
@@ -80,8 +79,8 @@ def terminate():
     
 def init():
     cs.noecho()
-    cs.halfdelay(7)
-    stdscr.keypad(False)
+    cs.halfdelay(5)
+    stdscr.keypad(True)
 
 if __name__ == '__main__':
     # Curses standard screen

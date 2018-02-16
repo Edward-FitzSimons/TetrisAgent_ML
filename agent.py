@@ -15,12 +15,18 @@ from engine import TetrisEngine
 # This is being modeled based on the
 # user engine, where the user plays
 
+#### Constants #####
+SPECTATE = True
+SPEED = 1
+
 def play_game():
     
     #Grab environment
     
     # store play information
     db = []
+    # grab board from engine
+    brd = env.board
     
     # initial rendering
     stdscr.addstr(str(env))
@@ -38,19 +44,40 @@ def play_game():
     #       5 : Rotate Right
     #       6 : No Action
     
+    val = 0
     while not done:
-            action= 6
-            key = stdscr.getch() # The only reason this is here is to add a delay
-            action = rnd.randint(1,6)
+          
+            # Get set of states to decide from
+            # state: [0] = anchor x, [1] = shape (including rotation)
+            states = env.get_states()
+            # Select an end states at random
+            end = states[rnd.randint(0,len(states) - 1)]
             
             # Game Step
-            state, reward, done = env.step(action)
-            db.append((state, reward, done, action))
+            # Step until we reach our desired states
+            while not done:
+                
+                if SPECTATE: stdscr.getch()
+                action = 6
+                
+                if np.array_equal(end[1], env.shape):
+                    action = 5
+                elif end[0] != env.anchor[0]:
+                    if end[0] < env.anchor[0]: action = 0
+                    else: action = 1
+                
+                state, reward, done = env.step(action)
+                val += reward
+                db.append((state, reward, done, action))
             
-            # Render
-            stdscr.clear()
-            stdscr.addstr(str(env))
-            stdscr.addstr('reward: ' + str(reward))
+                # Render
+                stdscr.clear()
+                stdscr.addstr(str(env))
+                stdscr.addstr('\nReward: ' + str(reward) 
+                            + '\nValue: ' + str(val))
+                
+                #Exit this loop when we place a piece
+                if reward > 0: break
             
     return db
 
@@ -79,7 +106,7 @@ def terminate():
     
 def init():
     cs.noecho()
-    cs.halfdelay(5)
+    cs.halfdelay(SPEED)
     stdscr.keypad(True)
 
 if __name__ == '__main__':

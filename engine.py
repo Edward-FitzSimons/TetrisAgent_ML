@@ -151,7 +151,9 @@ class TetrisEngine:
 
         # Update time and reward
         self.time += 1
-        reward = self.valid_action_count()
+        # For the time being we're gonna say reward is dependant on line clearing and piece placing
+        reward = 0
+        # reward = self.valid_action_count()
         #reward = 1
 
         done = False
@@ -162,9 +164,9 @@ class TetrisEngine:
                 self.clear()
                 self.n_deaths += 1
                 done = True
-                reward = -10
             else:
                 self._new_piece()
+                reward += 1
 
         self._set_piece(True)
         state = np.copy(self.board)
@@ -192,3 +194,26 @@ class TetrisEngine:
         s += '\no' + '-' * self.width + 'o'
         self._set_piece(False)
         return s
+    
+    # Return a set of states (anchor x, shape)
+    def get_states(self):
+        
+        #copy these so we don't screw up the environment
+        brd = np.copy(self.board)
+        shp = np.copy(self.shape)
+        states = []
+
+        #moving from left to right
+        for i in range(self.width):
+            #iterate through rotations
+            for r in range(4):
+                j = self.height
+                an = [i, j]
+                while is_occupied(shp, an, brd):
+                   j = j - 1
+                   an[1] = j
+                states.append([i, shp])
+                if r < 4: shp, an = rotate_right(shp, an, brd)
+        
+        return states
+            

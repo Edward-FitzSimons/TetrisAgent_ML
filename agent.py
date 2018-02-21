@@ -16,7 +16,7 @@ from engine import TetrisEngine
 # user engine, where the user plays
 
 #### Constants #####
-SPECTATE = True
+SPECTATE = False
 SPEED = 1
 
 def play_game():

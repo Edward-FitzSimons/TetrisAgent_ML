@@ -15,9 +15,12 @@ from engine import TetrisEngine
 # This is being modeled based on the
 # user engine, where the user plays
 
-#### Constants #####
+############ Constants #############
 SPECTATE = False
 SPEED = 1
+
+# For greedy alg
+E = .9
 
 def play_game():
     

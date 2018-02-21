@@ -214,7 +214,7 @@ class TetrisEngine:
                 while is_occupied(shp, an, brd):
                    j = j - 1
                    an[1] = j
-                states.append([i, shp])
+                states.append([an, shp])
                 if r < 4: shp, an = rotate_right(shp, an, brd)
         
         return states

@@ -15,6 +15,7 @@ def play_game():
 
     val = 0
     while not done:
+        acts = []
         action = 6
         key = stdscr.getch()
 
@@ -32,16 +33,22 @@ def play_game():
             action = 4
         elif key == ord('e'): # Rotate right
             action = 5
-
+        
+        acts.append(action)
         # Game step
         state, reward, done, new = env.step(action)
-        db.append((state,reward,done,action))
+        
+        if new: 
+            db.append((state, reward, done, acts))
+            acts = []
 
         val = val + reward
         # Render
         stdscr.clear()
         stdscr.addstr(str(env))
-        stdscr.addstr('\nReward: ' + str(reward) + '\nValue: ' + str(val))
+        stdscr.addstr('\nReward: ' + str(reward) 
+                    + '\nValue: ' + str(val)
+                    + '\nAnchor: ' + str(env.anchor))
 
     return db
 

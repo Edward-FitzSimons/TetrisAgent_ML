@@ -16,11 +16,11 @@ from engine import TetrisEngine
 # user engine, where the user plays
 
 ############ Constants #############
-SPECTATE = False
+SPECTATE = True
 SPEED = 1
 
 # For greedy alg
-E = .9
+E = .05
 
 def play_game():
     
@@ -54,7 +54,10 @@ def play_game():
             # state: [0] = anchor x, [1] = shape (including rotation)
             states = env.get_states()
             # Select an end states at random
-            end = states[rnd.randint(0,len(states) - 1)]
+            #if rnd.randint(1, 100) < 100 * E:
+            #    end = states[rnd.randint(0, len(states) - 1)]
+            #else:
+            end = apply_policy(states)
             
             # Game Step
             # Step until we reach our desired states
@@ -65,13 +68,13 @@ def play_game():
             while not done and not new:
                 
                 if SPECTATE: stdscr.getch()
-                action = 6
+                action = 2
                 
-                if not np.array_equal(end[1], env.shape):
-                    action = 5
-                elif end[0] != env.anchor[0]:
-                    if end[0] < env.anchor[0]: action = 0
+                if end[0][0] != env.anchor[0]:
+                    if end[0][0] < env.anchor[0]: action = 0
                     else: action = 1
+                elif not np.array_equal(end[1], env.shape):
+                    action = 5
                 
                 state, reward, done, new = env.step(action)
                 acts.append(action)
@@ -82,12 +85,34 @@ def play_game():
                 stdscr.addstr('\nReward: ' + str(reward) 
                             + '\nValue: ' + str(value)
                             + '\nCurrent Shape: ' + str(env.shape)
-                            + '\nGoal Shape: ' + str(end[1]))
+                            + '\nGoal Shape: ' + str(end[1])
+                            + '\nGoal Anchor: ' + str(end[0]))
                 value += reward
                 
             db.append((state, reward, done, acts))
             
     return db
+
+# Takes a group of states and picks one based on policy
+# Assumes state list is not empty
+def apply_policy(states):
+    
+    end = states[0]
+    
+    #Current policy: Highest anchor (lowest on the board)
+    for st in states:
+        # get highest y in shape, to account for shapes that
+        # dip below the anchor
+        y = 0
+        for a in st[1]:
+            if a[1] > y: y = a[1]
+        
+        y = y + st[0][1]
+        if y > end[0][1]:
+            end = st
+    
+    return end
+    
 
 def play_again():
    

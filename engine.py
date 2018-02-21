@@ -153,6 +153,7 @@ class TetrisEngine:
         self.time += 1
         # For the time being we're gonna say reward is dependant on line clearing and piece placing
         reward = 0
+        new = False
         # reward = self.valid_action_count()
         #reward = 1
 
@@ -167,11 +168,12 @@ class TetrisEngine:
             else:
                 self._new_piece()
                 reward += 1
+                new = True
 
         self._set_piece(True)
         state = np.copy(self.board)
         self._set_piece(False)
-        return state, reward, done
+        return state, reward, done, new
 
     def clear(self):
         self.time = 0

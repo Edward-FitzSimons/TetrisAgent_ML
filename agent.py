@@ -44,7 +44,7 @@ def play_game():
     #       5 : Rotate Right
     #       6 : No Action
     
-    val = 0
+    value = 0
     while not done:
           
             # Get set of states to decide from
@@ -55,29 +55,34 @@ def play_game():
             
             # Game Step
             # Step until we reach our desired states
-            while not done:
+            new = False
+            reward = 0
+            done = False
+            acts = []
+            while not done and not new:
                 
                 if SPECTATE: stdscr.getch()
                 action = 6
                 
-                if np.array_equal(end[1], env.shape):
+                if not np.array_equal(end[1], env.shape):
                     action = 5
                 elif end[0] != env.anchor[0]:
                     if end[0] < env.anchor[0]: action = 0
                     else: action = 1
                 
-                state, reward, done = env.step(action)
-                val += reward
-                db.append((state, reward, done, action))
-            
+                state, reward, done, new = env.step(action)
+                acts.append(action)
+                
                 # Render
                 stdscr.clear()
                 stdscr.addstr(str(env))
                 stdscr.addstr('\nReward: ' + str(reward) 
-                            + '\nValue: ' + str(val))
+                            + '\nValue: ' + str(value)
+                            + '\nCurrent Shape: ' + str(env.shape)
+                            + '\nGoal Shape: ' + str(end[1]))
+                value += reward
                 
-                #Exit this loop when we place a piece
-                if reward > 0: break
+            db.append((state, reward, done, acts))
             
     return db
 

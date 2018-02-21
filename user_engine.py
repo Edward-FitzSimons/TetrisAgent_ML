@@ -13,6 +13,7 @@ def play_game():
     # Global action
     action = 6
 
+    val = 0
     while not done:
         action = 6
         key = stdscr.getch()
@@ -33,13 +34,14 @@ def play_game():
             action = 5
 
         # Game step
-        state, reward, done = env.step(action)
+        state, reward, done, new = env.step(action)
         db.append((state,reward,done,action))
 
+        val = val + reward
         # Render
         stdscr.clear()
         stdscr.addstr(str(env))
-        stdscr.addstr('reward: ' + str(reward))
+        stdscr.addstr('\nReward: ' + str(reward) + '\nValue: ' + str(val))
 
     return db
 

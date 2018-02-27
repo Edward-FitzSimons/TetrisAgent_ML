@@ -67,12 +67,39 @@ def rotate_right(shape, anchor, board):
 def idle(shape, anchor, board):
     return (shape, anchor)
 
+def remove_drop(shape, anchor, board):
+    nboard= np.copy(board)
+    
+    for i, j in shape:
+        x, y = anchor[0] + i, anchor[1] + j
+        nboard[x,y] = 0
+    
+    return nboard
 
+def check_top(shape, anchor, board, top):
+    
+    ntop = top
+    for i, j in shape:
+        y = anchor[1] + j
+        if y < ntop: ntop = y
+    
+    return ntop
+
+def check_open_below(shape, anchor, board, height):
+
+    for i, j in shape:
+        x, y = anchor[0] + i, anchor[1] + j
+        if y + 1 < height and board[x, y+1] == 0:
+            return True
+            
+    return False
+        
 class TetrisEngine:
     def __init__(self, width, height):
         self.width = width
         self.height = height
         self.board = np.zeros(shape=(width, height), dtype=np.float)
+        self.top = height - 1
 
         # actions are triggered by letters
         self.value_action_map = {
@@ -160,14 +187,21 @@ class TetrisEngine:
         done = False
         if self._has_dropped():
             self._set_piece(True)
-            reward += 10 * self._clear_lines()
+            tp = check_top(self.shape, self.anchor, self.board, self.top)
+            cleared = self._clear_lines()
+            reward += 10 * cleared
+            tp = tp + cleared
             if np.any(self.board[:, 0]):
                 self.clear()
                 self.n_deaths += 1
                 done = True
             else:
+                if tp >= self.top: reward += 1
+                self.top = tp 
+                if check_open_below(self.shape, self.anchor, self.board, self.height):
+                    reward -= 2
+                
                 self._new_piece()
-                reward += 1
                 new = True
 
         self._set_piece(True)

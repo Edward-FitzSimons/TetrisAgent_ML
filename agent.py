@@ -55,9 +55,8 @@ def play_game():
             states = env.get_states()
             # Select an end states at random
             #if rnd.randint(1, 100) < 100 * E:
-            #    end = states[rnd.randint(0, len(states) - 1)]
-            #else:
-            end = apply_policy(states)
+            end = states[rnd.randint(0, len(states) - 1)]
+
             
             # Game Step
             # Step until we reach our desired states
@@ -92,26 +91,6 @@ def play_game():
             db.append((state, reward, done, acts))
             
     return db
-
-# Takes a group of states and picks one based on policy
-# Assumes state list is not empty
-def apply_policy(states):
-    
-    end = states[0]
-    
-    #Current policy: Highest anchor (lowest on the board)
-    for st in states:
-        # get highest y in shape, to account for shapes that
-        # dip below the anchor
-        y = 0
-        for a in st[1]:
-            if a[1] > y: y = a[1]
-        
-        y = y + st[0][1]
-        if y > end[0][1]:
-            end = st
-    
-    return end
     
 
 def play_again():

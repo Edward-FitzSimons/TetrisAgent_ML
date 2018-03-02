@@ -59,6 +59,7 @@ def play_game(spectate):
             # Step until we reach our desired states
             new = False # whether or not we've dropped a new block
             success = False # whether or not we could get to the end state
+            st_anch = end[0] # starting anchor of the shape
             reward = 0 # reward of this set of actions
             done = False # whether or not we've lost
             acts = [] # the set of actions
@@ -89,7 +90,9 @@ def play_game(spectate):
                 if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):
                     success = True
                 
-            db.append((state, reward, done, env.height, success, acts))
+            db.append((state, reward, done, st_anch, 
+                       env.anchor, end[1], env.height,
+                       success, acts))
             
     return db
 

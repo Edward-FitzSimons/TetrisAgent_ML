@@ -9,28 +9,24 @@
 import curses as cs
 import numpy as np
 import random as rnd
-import os
 from engine import TetrisEngine
 
 # This is being modeled based on the
 # user engine, where the user plays
 
 ############ Constants #############
-SPECTATE = True
 SPEED = 1
 
 # For greedy alg
 E = .05
 
-def play_game():
+def play_game(spectate):
     
     #Grab environment
     
     # store play information
     db = []
-    # grab board from engine
-    brd = env.board
-    
+
     # initial rendering
     stdscr.addstr(str(env))
     
@@ -53,6 +49,7 @@ def play_game():
             # Get set of states to decide from
             # state: [0] = anchor x, [1] = shape (including rotation)
             states = env.get_states()
+            
             # Select an end states at random
             #if rnd.randint(1, 100) < 100 * E:
             end = states[rnd.randint(0, len(states) - 1)]
@@ -60,13 +57,14 @@ def play_game():
             
             # Game Step
             # Step until we reach our desired states
-            new = False
-            reward = 0
-            done = False
-            acts = []
+            new = False # whether or not we've dropped a new block
+            success = False # whether or not we could get to the end state
+            reward = 0 # reward of this set of actions
+            done = False # whether or not we've lost
+            acts = [] # the set of actions
             while not done and not new:
                 
-                if SPECTATE: stdscr.getch()
+                if spectate: stdscr.getch()
                 action = 2
                 
                 if end[0][0] != env.anchor[0]:
@@ -88,10 +86,12 @@ def play_game():
                             + '\nGoal Anchor: ' + str(end[0]))
                 value += reward
                 
-            db.append((state, reward, done, acts))
+                if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):
+                    success = True
+                
+            db.append((state, reward, done, env.height, success, acts))
             
     return db
-    
 
 def play_again():
    
@@ -120,10 +120,36 @@ def init():
     cs.noecho()
     cs.halfdelay(SPEED)
     stdscr.keypad(True)
+    
+# Function to get command line agruments
+def getopts(argv):
+    opts = {}  # Empty dictionary to store key-value pairs.
+    while argv:  # While there are arguments left to parse...
+        if argv[0][0] == '-':  # Found a "-name value" pair.
+            if len(argv) > 1:
+                opts[argv[0]] = argv[1]  # Add key and value to the dictionary.
+            else:
+                opts[argv[0]] = 0
+                
+        argv = argv[1:]  # Reduce the argument list by copying it starting from index 1.
+            
+    return opts
 
+# Arguments for agent.py:
+# -s: spectate, no variable just flag
+# -r n: play n games and record to database
 if __name__ == '__main__':
     # Curses standard screen
     stdscr = cs.initscr()
+    
+    # Grab arguments
+    from sys import argv
+    myargs = getopts(argv)
+    
+    spectate = False
+    if '-s' in myargs: spectate = True
+    runAuto = 0
+    if '-r' in myargs: runAuto = int(myargs['-r'])
 
     # Init environment
     width, height = 10, 20 # standard tetris friends rules
@@ -134,12 +160,14 @@ if __name__ == '__main__':
         init()
         stdscr.clear()
         env.clear()
-        db = play_game()
+        db = play_game(spectate)
 
         # Return to terminal
         terminate()
+        
         # Should the game info be saved?
-        if save_game():
+        save = runAuto > 0 or save_game()
+        if save:
             try:
                 fr = open('training_data.npy', 'rb')
                 x = np.load(fr)
@@ -154,7 +182,11 @@ if __name__ == '__main__':
                 fw = open('training_data.npy', 'wb')
                 print('Saving {0} moves...'.format(len(db)))
                 np.save(fw, db)
+                
         # Prompt to play again
-        if not play_again():
+        play = runAuto > 0 or play_again()
+        if not play:
             print('Thanks for contributing!')
             break
+        
+        runAuto = runAuto - 1

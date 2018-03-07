@@ -50,7 +50,6 @@ def play_game(spectate):
             # state: [0] = anchor x, [1] = shape (including rotation)
             states = env.get_states()
             end = states[0]
-            cycles = -1
             
             # Select an end states at random
             if rnd.randint(1, 100) < 100 * E:
@@ -82,7 +81,7 @@ def play_game(spectate):
                 else:
                     action = 2
                 
-                state, reward, done, new, b_height, cleared = env.step(action)
+                state, reward, done, new, b_height, cleared, cover = env.step(action)
                 acts.append(action)
                 
                 # Render
@@ -91,14 +90,16 @@ def play_game(spectate):
                 stdscr.addstr('\nReward: ' + str(reward) 
                             + '\nValue: ' + str(value)
                             + '\nGoal Anchor: ' + str(end[0])
-                            + '\nCycles: ' + str(cycles))
+                            + '\nBlock Height: ' + str(env.block_height))
                 value += reward
                 
                 if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):
                     success = True
        
-            db = update_db(db, reward, end[1], env.board, b_height - prev_height, cleared, success)
+            db = update_db(db, reward, end[1], env.board,
+                           b_height - prev_height, cleared, cover, success)
             
+    db['Value'].append(value)
     return db
 
 # Pick an end state from all possible end states
@@ -113,7 +114,7 @@ def pick_action(db, states):
     
     # Cycle and compare
     end = states[0]
-    end_rew = -5
+    end_rew = -10
     for state in states:        
         rew = 0
         fin_brd, height = apply_shape(state[0], state[1], dummy_brd)
@@ -126,12 +127,12 @@ def pick_action(db, states):
                 break
             
         if height - clear > b_height:
-            rew = rew + db['R|Up'][1]
+            rew = rew + db['R|Up'][1] * (height - clear - b_height)
+        else:
+            rew = rew + db['R|NotUp'][1] * (b_height - clear - height)
             
-        shape_name, r = find_shape_name(state[1])
-        tag_shape = 'R|' + str(shape_name) + '_' + str(r)
-        if tag_shape in db:
-            rew = rew + db[tag_shape][1]
+        op = open_below(state[0], state[1], fin_brd, 20)
+        rew = rew + op * db['R|Cover'][1]
             
         rew = rew + get_reward_avg(state[0], state[1], reward_brd)
             
@@ -148,8 +149,6 @@ def get_reward_avg(anchor, shape, board):
     for i,j in shape:
         if x + i >= 0 and x + i < 10 and y + j >= 0 and y + j < 20:
             rw = rw + board[x + i][y + j][1]
-        else:
-            rw = rw - 1
 
     return rw/4
 
@@ -162,6 +161,18 @@ def can_clear(board):
             
     return clear
 
+def open_below(anchor, shape, board, height):
+
+    open = 0
+    for i, j in shape:
+        x, y = anchor[0] + i, anchor[1] + j
+        z = 1
+        while y + z < height and y >= 0 and board[x, y+z] == 0:
+            open = open + 1
+            z = z + 1
+                
+    return open
+
 def apply_shape(anchor, shape, board):
     brd = np.copy(board)
     x, y, top = anchor[0], anchor[1], anchor[1]
@@ -172,29 +183,35 @@ def apply_shape(anchor, shape, board):
     
     return brd, 20 - top
 
-def update_db(db, reward, shape, board, direc, l_clear, success):
+def update_db(db, reward, shape, board, direc, l_clear, cover, success):
     
     # Update general reward
     db['Reward'][0], db['Reward'][1] = online_mean(db, 'Reward', reward)
     # Update block/reward rations
-    db['Board'] = board_means(db, board, reward)
+    if reward > 0:
+        db['Board'] = board_means(db, board, reward)
     
     # Update reward based on whether or not we increase or decrease the block level
     if direc > 0:
         db['R|Up'][0], db['R|Up'][1] = online_mean(db, 'R|Up', reward)
     elif direc < 0:
-        db['R|Down'][0], db['R|Down'][1] = online_mean(db, 'R|Down', reward)
+        db['R|NotUp'][0], db['R|NotUp'][1] = online_mean(db, 'R|NotUp', reward)
         
     # Update reward based on whether or not move was completed
     if success:
         db['R|Success'][0], db['R|Success'][1] = online_mean(db, 'R|Success', reward)
+        
+    # Update reward based on whether or not we've covered any open spaces
+    if cover:
+        db['R|Cover'][0], db['R|Cover'][1] = online_mean(db, 'R|Cover', reward)
     
     # Update reward based on lines cleared    
     sh_name, rot = find_shape_name(shape)
     if sh_name is not None:
         tag = 'R|' + sh_name + '_' + str(rot)
         db[tag][0], db[tag][1] = online_mean(db, tag, reward)
-    
+
+    # Update reward based on lines cleared    
     if l_clear > 0:
         tag = 'R|Lines_Cleared_' + str(l_clear)
         db[tag][0], db[tag][1] = online_mean(db, tag, reward)
@@ -249,7 +266,8 @@ def grab_db():
     except Exception as e:
         brd = np.zeros((10,20,2))
         # 'Key': [n, avg]
-        return {'Board': brd, 'Reward':[0,0], 'R|Up':[0,0], 'R|Down':[0,0], 'R|Success':[0,0],
+        return {'Board': brd, 'Reward':[0,0], 'Value':[],
+                'R|Up':[0,0], 'R|NotUp':[0,0], 'R|Success':[0,0], 'R|Cover':[0,0],
                 'R|T_1':[0,0],'R|T_2':[0,0],'R|T_3':[0,0],'R|T_4':[0,0],
                 'R|J_1':[0,0],'R|J_2':[0,0],'R|J_3':[0,0],'R|J_4':[0,0],
                 'R|L_1':[0,0],'R|L_2':[0,0],'R|L_3':[0,0],'R|L_4':[0,0],

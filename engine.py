@@ -87,14 +87,17 @@ def get_block_height(shape, anchor, board, height, width):
 
     return 0
 
-def check_open_below(shape, anchor, board, height):
+def open_below(shape, anchor, board, height):
 
+    open = 0
     for i, j in shape:
         x, y = anchor[0] + i, anchor[1] + j
-        if y + 1 < height and board[x, y+1] == 0:
-            return True
-            
-    return False
+        z = 1
+        while y + z < height and board[x, y+z] == 0:
+            open = open + 1
+            z = z + 1
+                
+    return open
         
 class TetrisEngine:
     def __init__(self, width, height):
@@ -185,24 +188,26 @@ class TetrisEngine:
         new = False
         done = False
         cleared = 0
+        cover = 0
         
         if self._has_dropped():
             self._set_piece(True)
             cleared = self._clear_lines()
-            reward += 25 * cleared
+            reward += 20 * cleared
             
             tp = self.block_height
             self.block_height = get_block_height(self.shape, self.anchor, self.board, self.height, self.width)
-            if self.block_height > tp: reward -= 1
-            elif self.block_height < tp: reward += 1
+            if self.block_height > tp: reward -= self.block_height - tp
+            else: reward += 1 + tp - self.block_height
 
             if np.any(self.board[:, 0]):
                 self.clear()
                 self.n_deaths += 1
                 done = True
             else:
-                if check_open_below(self.shape, self.anchor, self.board, self.height):
-                    reward -= 1
+                cover = open_below(self.shape, self.anchor, self.board, self.height)
+                if cover > 0:
+                    reward -= 2 * cover
                 
                 self._new_piece()
                 new = True
@@ -210,7 +215,7 @@ class TetrisEngine:
         self._set_piece(True)
         state = np.copy(self.board)
         self._set_piece(False)
-        return state, reward, done, new, self.block_height, cleared
+        return state, reward, done, new, self.block_height, cleared, cover > 0
 
     def clear(self):
         self.time = 0

@@ -184,15 +184,17 @@ class TetrisEngine:
         reward = 0
         new = False
         done = False
+        cleared = 0
         
         if self._has_dropped():
             self._set_piece(True)
             cleared = self._clear_lines()
-            reward += 10 * cleared
+            reward += 25 * cleared
             
             tp = self.block_height
             self.block_height = get_block_height(self.shape, self.anchor, self.board, self.height, self.width)
-            if self.block_height <= tp: reward += 1
+            if self.block_height > tp: reward -= 1
+            elif self.block_height < tp: reward += 1
 
             if np.any(self.board[:, 0]):
                 self.clear()
@@ -208,7 +210,7 @@ class TetrisEngine:
         self._set_piece(True)
         state = np.copy(self.board)
         self._set_piece(False)
-        return state, reward, done, new, self.block_height
+        return state, reward, done, new, self.block_height, cleared
 
     def clear(self):
         self.time = 0

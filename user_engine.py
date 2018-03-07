@@ -36,11 +36,7 @@ def play_game():
         
         acts.append(action)
         # Game step
-        state, reward, done, new = env.step(action)
-        
-        if new: 
-            db.append((state, reward, done, acts))
-            acts = []
+        state, reward, done, new, b_height = env.step(action)
 
         val = val + reward
         # Render
@@ -48,7 +44,8 @@ def play_game():
         stdscr.addstr(str(env))
         stdscr.addstr('\nReward: ' + str(reward) 
                     + '\nValue: ' + str(val)
-                    + '\nAnchor: ' + str(env.anchor))
+                    + '\nAnchor: ' + str(env.anchor)
+                    + '\nBlock Height: ' + str(b_height))
 
     return db
 
@@ -63,7 +60,6 @@ def play_again():
     return True if choice.lower() == 'y' else False
 
 def save_game():
-    print('Accumulated reward: {0} | {1} moves'.format(sum([i[1] for i in db]), len(db)))
     print('Would you like to store the game info as training data? [y/n]')
     #stdscr.addstr('Would you like to store the game info as training data? [y/n]\n')
     #stdscr.addstr('> ')

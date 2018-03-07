@@ -76,14 +76,16 @@ def remove_drop(shape, anchor, board):
     
     return nboard
 
-def check_top(shape, anchor, board, top):
+# make sure you pass in a copy of the board, not the actual board
+def get_block_height(shape, anchor, board, height, width):
     
-    ntop = top
-    for i, j in shape:
-        y = anchor[1] + j
-        if y < ntop: ntop = y
+    for y in range(height):
+        for x in range(width):
+            if board[x,y] != 0:
+                return height - y
     
-    return ntop
+
+    return 0
 
 def check_open_below(shape, anchor, board, height):
 
@@ -99,7 +101,7 @@ class TetrisEngine:
         self.width = width
         self.height = height
         self.board = np.zeros(shape=(width, height), dtype=np.float)
-        self.top = height - 1
+        self.block_height = 0
 
         # actions are triggered by letters
         self.value_action_map = {
@@ -175,31 +177,30 @@ class TetrisEngine:
         self.shape, self.anchor = self.value_action_map[action](self.shape, self.anchor, self.board)
         # Drop each step
         self.shape, self.anchor = soft_drop(self.shape, self.anchor, self.board)
-
+        
         # Update time and reward
         self.time += 1
         # For the time being we're gonna say reward is dependant on line clearing and piece placing
         reward = 0
         new = False
-        # reward = self.valid_action_count()
-        #reward = 1
-
         done = False
+        
         if self._has_dropped():
             self._set_piece(True)
-            tp = check_top(self.shape, self.anchor, self.board, self.top)
             cleared = self._clear_lines()
             reward += 10 * cleared
-            tp = tp + cleared
+            
+            tp = self.block_height
+            self.block_height = get_block_height(self.shape, self.anchor, self.board, self.height, self.width)
+            if self.block_height <= tp: reward += 1
+
             if np.any(self.board[:, 0]):
                 self.clear()
                 self.n_deaths += 1
                 done = True
             else:
-                if tp >= self.top: reward += 1
-                self.top = tp 
                 if check_open_below(self.shape, self.anchor, self.board, self.height):
-                    reward -= 2
+                    reward -= 1
                 
                 self._new_piece()
                 new = True
@@ -207,7 +208,7 @@ class TetrisEngine:
         self._set_piece(True)
         state = np.copy(self.board)
         self._set_piece(False)
-        return state, reward, done, new
+        return state, reward, done, new, self.block_height
 
     def clear(self):
         self.time = 0
@@ -252,4 +253,3 @@ class TetrisEngine:
                 if r < 4: shp, an = rotate_right(shp, an, brd)
         
         return states
-            

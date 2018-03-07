@@ -25,7 +25,7 @@ def play_game(spectate):
     #Grab environment
     
     # store play information
-    db = []
+    db = grab_db()
 
     # initial rendering
     stdscr.addstr(str(env))
@@ -59,10 +59,11 @@ def play_game(spectate):
             # Step until we reach our desired states
             new = False # whether or not we've dropped a new block
             success = False # whether or not we could get to the end state
-            st_anch = end[0] # starting anchor of the shape
             reward = 0 # reward of this set of actions
             done = False # whether or not we've lost
             acts = [] # the set of actions
+
+            
             while not done and not new:
                 
                 if spectate: stdscr.getch()
@@ -74,7 +75,7 @@ def play_game(spectate):
                 elif not np.array_equal(end[1], env.shape):
                     action = 5
                 
-                state, reward, done, new = env.step(action)
+                state, reward, done, new, b_height = env.step(action)
                 acts.append(action)
                 
                 # Render
@@ -82,19 +83,93 @@ def play_game(spectate):
                 stdscr.addstr(str(env))
                 stdscr.addstr('\nReward: ' + str(reward) 
                             + '\nValue: ' + str(value)
-                            + '\nCurrent Shape: ' + str(env.shape)
-                            + '\nGoal Shape: ' + str(end[1])
-                            + '\nGoal Anchor: ' + str(end[0]))
+                            + '\nGoal Anchor: ' + str(end[0])
+                            + '\nTop: ' + str(b_height))
                 value += reward
                 
                 if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):
                     success = True
-                
-            db.append((state, reward, done, st_anch, 
-                       env.anchor, end[1], env.height,
-                       success, acts))
+       
+            db = update_db(db, reward, end[1], env.board, 0, success)
             
     return db
+
+def update_db(db, reward, shape, board, direc, success):
+    
+    # Update general reward
+    db['Reward'][0], db['Reward'][1] = online_mean(db, 'Reward', reward)
+    # Update block/reward rations
+    db['Board'][0], db['Board'][1] = board_means(db, board, reward)
+    
+    # Update reward based on whether or not we increase or decrease the block level
+    if direc > 0:
+        db['R|Up'][0], db['R|Up'][1] = online_mean(db, 'R|Up', reward)
+    elif direc < 0:
+        db['R|Down'][0], db['R|Down'][1] = online_mean(db, 'R|Down', reward)
+        
+    # Update reward based on whether or not move was completed
+    if success:
+        db['R|Success'][0], db['R|Success'][1] = online_mean(db, 'R|Success', reward)
+        
+    sh_name = find_shape_name(shape)
+    if sh_name is not None:
+        tag = 'R|' + sh_name
+        db[tag][0], db[tag][1] = online_mean(db, tag, reward)
+    
+    return db
+
+# Finds the name, including number of clockwise rotations, of a shape
+def find_shape_name(shape):
+    shapes = {
+    'T': [(0, 0), (-1, 0), (1, 0), (0, -1)],
+    'J': [(0, 0), (-1, 0), (0, -1), (0, -2)],
+    'L': [(0, 0), (1, 0), (0, -1), (0, -2)],
+    'Z': [(0, 0), (-1, 0), (0, -1), (1, -1)],
+    'S': [(0, 0), (-1, -1), (0, -1), (1, 0)],
+    'I': [(0, 0), (0, -1), (0, -2), (0, -3)],
+    'O': [(0, 0), (0, -1), (-1, 0), (-1, -1)],
+    }
+    shape_names = ['T', 'J', 'L', 'Z', 'S', 'I', 'O']
+    for n in shape_names:
+        sh = shapes[n]
+        for r in range(1,4):
+            if np.array_equal(shape, sh):
+                return n + '_' + str(r)
+            sh = [(-j, i) for i, j in sh]
+            
+    return None
+
+def online_mean(db, tag, reward):
+    n, r = db[tag][0] + 1, db[tag][1]
+    r = r + (1/n) * (reward - r)
+    return n, r
+
+def board_means(db, brd_env, r):
+    n = db['Board'][0] + 1
+    brd = db['Board'][1]
+    for i in range(len(brd)):
+        for j in range(len(brd[i])):
+            if brd_env[i][j] != 0:
+                brd[i][j] = brd[i][j] + (1/n) * (r - brd[i][j])
+    
+    return n, brd
+
+def grab_db():
+
+    try:
+        fr = open('training_data.npy', 'rb')
+        return np.load(fr).item()
+    except Exception as e:
+        brd = np.zeros((10,20))
+        # 'Key': [n, avg]
+        return {'Board':[0,brd], 'Reward':[0,0], 'R|Up':(0,0), 'R|Down':[0,0], 'R|Success':[0,0],
+                'R|T_1':[0,0],'R|T_2':[0,0],'R|T_3':[0,0],'R|T_4':[0,0],
+                'R|J_1':[0,0],'R|J_2':[0,0],'R|J_3':[0,0],'R|J_4':[0,0],
+                'R|L_1':[0,0],'R|L_2':[0,0],'R|L_3':[0,0],'R|L_4':[0,0],
+                'R|S_1':[0,0],'R|S_2':[0,0],'R|S_3':[0,0],'R|S_4':[0,0],
+                'R|Z_1':[0,0],'R|Z_2':[0,0],'R|Z_3':[0,0],'R|Z_4':[0,0],
+                'R|I_1':[0,0],'R|I_2':[0,0],'R|I_3':[0,0],'R|I_4':[0,0],
+                'R|O_1':[0,0],'R|O_2':[0,0],'R|O_3':[0,0],'R|O_4':[0,0],}
 
 def play_again():
    
@@ -106,7 +181,6 @@ def play_again():
     return True if choice.lower() == 'y' else False
     
 def save_game():
-    print('Accumulated reward: {0} | {1} moves'.format(sum([i[1] for i in db]), len(db)))
     print('Would you like to store the game info as training data? [y/n]')
     print('> ', end='')
     choice = input()
@@ -172,14 +246,10 @@ if __name__ == '__main__':
         save = runAuto > 0 or save_game()
         if save:
             try:
-                fr = open('training_data.npy', 'rb')
-                x = np.load(fr)
-                fr.close()
                 fw = open('training_data.npy', 'wb')
-                x = np.concatenate((x,db))
                 #print('Saving {0} moves...'.format(len(db)))
-                np.save(fw, x)
-                print('{0} data points in the training set'.format(len(x)))
+                np.save(fw, db)
+                print('Training set updated.')
             except Exception as e:
                 print('no training file exists. Creating one now...')
                 fw = open('training_data.npy', 'wb')

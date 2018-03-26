@@ -5,26 +5,36 @@ The purpose of this project is to create an agent that can play the game Tetris 
 We intend to utilize Butera's implemented methods for Reinforcement Learning as a basis for our own modified implementation. Additionally, a modified Q-Learning algorithm will be implemented later on to help increase the efficiency of the learning and the diminishment of failed states.
 
 ## Layout
-* dqn_agent.py - DQN reinforcement learning agent trains on tetris
-* supervised_agent.py - The same convolutional model as DQN trains on a dataset of user playthroughs
-* user_engine.py - Play tetris and accumulate information as a training set
-* run_model.py - Evaluate a saved agent model on a visual game of tetris (i.e.)
-```bash
-$ python run_model.py checkpoint.pth.tar
+* agent.py - Agent plays Tetris by itself.
+* data_view.ipynb - Jupyter Notebook for the calculation and visualizations of rewards.
+* engine.py - The underlying engine for the game.
+* training_data.npy - Data stored from each game played as a Numpy Array.
+* user_engine.py - Manually play tetris and accumulate information as a training set.
+
+
+## Play Tetris
+Play games and accumulate a data set for a supervised learning algorithm to train on. The database stores a dictionary of tuples containing the mean average of the rewards and other values.
+
+Each action you take will result in a corresponding soft drop. This is how the AI will play and therefore how the training data must be taken.
+
+### To have the agent play Tetris:
+```
+$ python3 agent.py
 ```
 
-## Play Tetris for Training Data
-Play games and accumulate a data set for a supervised learning algorithm to
-trian on. An element of data stores a
-(state, reward, done, action) tuple for each frame of the game.
+Flags:
+-s: Visualize the game currently being played
+-r: Play a select number of games
 
-You may notice the rules are slightly different than normal Tetris.
-Specifically, each action you take will result in a corresponding soft drop
-This is how the AI will play and therefore how the training data must be taken.
+For example,
+```
+$ python3 agent.py -s -r 5
+```
+will visualize the agent playing 5 separate games of Tetris.
 
-To play Tetris:
+### To manually play Tetris (CURRENTLY BROKEN):
 ```bash
-$ python user_engine.py
+$ python3 user_engine.py
 ```
 
 Controls:  
@@ -35,5 +45,4 @@ D: Shift right
 Q: Rotate left  
 E: Rotate right  
 
-At the end of each game, choose whether you want to store the information of
-that game in the data set.
+At the end of each game, choose whether you want to store the information of that game in the data set.

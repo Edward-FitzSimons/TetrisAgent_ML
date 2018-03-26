@@ -68,6 +68,8 @@ def idle(shape, anchor, board):
     return (shape, anchor)
 
 def remove_drop(shape, anchor, board):
+    # Returns board with current piece removed
+
     nboard= np.copy(board)
     
     for i, j in shape:
@@ -76,8 +78,8 @@ def remove_drop(shape, anchor, board):
     
     return nboard
 
-# make sure you pass in a copy of the board, not the actual board
 def get_block_height(shape, anchor, board, height, width):
+    # make sure you pass in a copy of the board, not the actual board
     
     for y in range(height):
         for x in range(width):
@@ -88,6 +90,7 @@ def get_block_height(shape, anchor, board, height, width):
     return 0
 
 def open_below(shape, anchor, board, height):
+    # Will there be an open space below when the block is placed?
 
     open = 0
     for i, j in shape:
@@ -239,8 +242,8 @@ class TetrisEngine:
         self._set_piece(False)
         return s
     
-    # Return a set of states (anchor x, shape)
     def get_states(self):
+        # Return a set of states (anchor x, shape)
         
         #copy these so we don't screw up the environment
         brd = np.copy(self.board)

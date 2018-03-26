@@ -119,6 +119,7 @@ def pick_action(db, states):
         rew = 0
         fin_brd, height = apply_shape(state[0], state[1], dummy_brd)
         
+        #Number of lines that can be cleared and reward
         clear = can_clear(fin_brd)
         for i in range(clear, 0, -1):
             tag_clear = 'R|Lines_Cleared_' + str(clear)
@@ -126,16 +127,20 @@ def pick_action(db, states):
                 rew = rew + db[tag_clear][1]
                 break
             
+        # Did we reaise or lower the block height?
         if height - clear > b_height:
             rew = rew + db['R|Up'][1] * (height - clear - b_height)
         else:
             rew = rew + db['R|NotUp'][1] * (b_height - clear - height)
             
+        # Any blocks open below - If so, add to expected reward
         op = open_below(state[0], state[1], fin_brd, 20)
         rew = rew + op * db['R|Cover'][1]
-            
+        
+        # Add all average rewards and return    
         rew = rew + get_reward_avg(state[0], state[1], reward_brd)
-            
+        
+        # If end reward is greater than previous reward, set equal to the state and current reward    
         if rew > end_rew:
             end, end_rew = state, rew
     
@@ -184,9 +189,11 @@ def apply_shape(anchor, shape, board):
     return brd, 20 - top
 
 def update_db(db, reward, shape, board, direc, l_clear, cover, success):
+    # Slot 0 = Number of entries, Slot 1 = the actual entries
     
     # Update general reward
     db['Reward'][0], db['Reward'][1] = online_mean(db, 'Reward', reward)
+
     # Update block/reward rations
     if reward > 0:
         db['Board'] = board_means(db, board, reward)
@@ -259,7 +266,8 @@ def board_means(db, brd_env, r):
     return brd
 
 def grab_db():
-
+    # Initialize the database
+    
     try:
         fr = open('training_data.npy', 'rb')
         return np.load(fr).item()

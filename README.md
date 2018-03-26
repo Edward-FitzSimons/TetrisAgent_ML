@@ -11,20 +11,19 @@ We intend to utilize Butera's implemented methods for Reinforcement Learning as 
 * training_data.npy - Data stored from each game played as a Numpy Array.
 * user_engine.py - Manually play tetris and accumulate information as a training set.
 
-
 ## Play Tetris
 Play games and accumulate a data set for a supervised learning algorithm to train on. The database stores a dictionary of tuples containing the mean average of the rewards and other values.
 
 Each action you take will result in a corresponding soft drop. This is how the AI will play and therefore how the training data must be taken.
 
-### To have the agent play Tetris:
+### Play Tetris - Agent:
 ```
 $ python3 agent.py
 ```
 
-Flags:
--s: Visualize the game currently being played
--r: Play a select number of games
+__Flags:__
+* -s: Visualize the game currently being played
+* -r: Play a select number of games
 
 For example,
 ```
@@ -32,17 +31,17 @@ $ python3 agent.py -s -r 5
 ```
 will visualize the agent playing 5 separate games of Tetris.
 
-### To manually play Tetris (CURRENTLY BROKEN):
+At the end of each game, choose whether you want to store the information of that game in the data set.
+
+### Play Tetris - Manually (CURRENTLY BROKEN):
 ```bash
 $ python3 user_engine.py
 ```
 
-Controls:  
-W: Hard drop (piece falls to the bottom)  
-A: Shift left  
-S: Soft drop (piece falls one tile)  
-D: Shift right  
-Q: Rotate left  
-E: Rotate right  
-
-At the end of each game, choose whether you want to store the information of that game in the data set.
+__Controls:__
+* W: Hard drop (piece falls to the bottom)
+* A: Shift left
+* S: Soft drop (piece falls one tile)
+* D: Shift right
+* Q: Rotate left
+* E: Rotate right

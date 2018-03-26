@@ -52,6 +52,7 @@ def play_game(spectate):
             end = states[0]
             
             # Select an end states at random
+            # E-Greedy
             if rnd.randint(1, 100) < 100 * E:
                 end = states[rnd.randint(0, len(states) - 1)]
             else:
@@ -73,11 +74,11 @@ def play_game(spectate):
                 if spectate: stdscr.getch()
                 action = 2
                 
-                if end[0][0] != env.anchor[0]:
+                if not np.array_equal(end[1], env.shape):
+                    action = 5
+                elif end[0][0] != env.anchor[0]:
                     if end[0][0] < env.anchor[0]: action = 0
                     else: action = 1
-                elif not np.array_equal(end[1], env.shape):
-                    action = 5
                 else:
                     action = 2
                 
@@ -89,8 +90,7 @@ def play_game(spectate):
                 stdscr.addstr(str(env))
                 stdscr.addstr('\nReward: ' + str(reward) 
                             + '\nValue: ' + str(value)
-                            + '\nGoal Anchor: ' + str(end[0])
-                            + '\nBlock Height: ' + str(env.block_height))
+                            + '\nScore: ' + str(env.score))
                 value += reward
                 
                 if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):

@@ -346,8 +346,8 @@ if __name__ == '__main__':
     env = TetrisEngine(width, height)
 
     # Play games on repeat
-    gamenum = 1
-    gamesleft = runAuto
+    curgame = 1
+    totalgames = runAuto
     while True:
         init()
         stdscr.clear()
@@ -362,9 +362,8 @@ if __name__ == '__main__':
         if save:
             try:
                 fw = open('training_data.npy', 'wb')
-                #print('Saving {0} moves...'.format(len(db)))
                 np.save(fw, db)
-                print('Training set updated. {}/{}'.format(gamenum, gamesleft))
+                print('Training set updated. {}/{}'.format(curgame, totalgames))
             except Exception as e:
                 print('no training file exists. Creating one now...')
                 fw = open('training_data.npy', 'wb')
@@ -377,5 +376,7 @@ if __name__ == '__main__':
             print('Thanks for contributing!')
             break
         
-        gamenum = gamenum + 1
+        # Increment what game iteration is being executed
+        # Decrement the total remaining number of games
+        curgame = curgame + 1
         runAuto = runAuto - 1

@@ -116,6 +116,9 @@ def pick_action(db, states):
     end = states[0]
     end_rew = -10
     for state in states:        
+        
+        if will_stack(state[0], state[1], dummy_brd, env.height): continue;
+        
         rew = 0
         fin_brd, height = apply_shape(state[0], state[1], dummy_brd)
         
@@ -156,6 +159,18 @@ def get_reward_avg(anchor, shape, board):
             rw = rw + board[x + i][y + j][1]
 
     return rw/4
+
+# gets whether or not the state is obstructed
+def will_stack(anchor, shape, board, height):
+    brd = np.copy(board)
+    
+    for i,j in shape:
+        x,y = anchor[0] + i, anchor[1] + j
+        while y > 2:
+            if brd[x , y] != 0: return True
+            y = y - 1
+    
+    return False
 
 # make sure we use a copy for this
 def can_clear(board):

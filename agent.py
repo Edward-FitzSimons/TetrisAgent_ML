@@ -102,6 +102,14 @@ def play_game(spectate):
     db['Value'].append(value)
     return db
 
+def sigmoid(x):
+    return 1.0/(1.0 + np.exp(-x))
+
+def nnFunc(x, y, xw, yw, b):
+    z = x*xw + y*yw + b
+    return sigmoid(z)
+
+
 # Pick an end state from all possible end states
 def pick_action(db, states):
     
@@ -136,19 +144,32 @@ def pick_action(db, states):
         else:
             rew = rew + db['R|NotUp'][1] * (b_height - clear - height)
             
+        
+
+
         # Any blocks open below - If so, add to expected reward
         op = open_below(state[0], state[1], fin_brd, 20)
-        rew = rew + op * db['R|Cover'][1]
+
+        opW = sigmoid(op)
+        rewW = sigmoid(rew)
+
+        rew = nnFunc(op, rew, opW, rewW, clear)
+
+        #rew = rew + op * db['R|Cover'][1]
         
         # Add all average rewards and return    
-        rew = rew + get_reward_avg(state[0], state[1], reward_brd)
+        #rew = rew + get_reward_avg(state[0], state[1], reward_brd)
+
+        # nn test
+
         
         # If end reward is greater than previous reward, set equal to the state and current reward    
         if rew > end_rew:
             end, end_rew = state, rew
     
     return end
-    
+
+
 # gets the average reward from group of blocks
 def get_reward_avg(anchor, shape, board):
     x , y = anchor[0], anchor[1]

@@ -68,7 +68,7 @@ def play_game(spectate):
             acts = [] # the set of actions
             prev_height = env.block_height
             b_height = prev_height
-            
+
             while not done and not new:
                 
                 if spectate: stdscr.getch()
@@ -100,15 +100,15 @@ def play_game(spectate):
                            b_height - prev_height, cleared, cover, success)
             
     db['Value'].append(value)
+    db['Best_Shapes'] = best_shapes(db, 3)
     return db
 
 def sigmoid(x):
-    return 1.0/(1.0 + np.exp(-x))
+    return 1.0/(1.0 + np.exp(-x)) 
 
-def nnFunc(x, y, xw, yw, b):
-    z = x*xw + y*yw + b
-    return sigmoid(z)
-
+def nnFunc(x, y, xw, yw, b): 
+    z = x*xw + y*yw + b 
+    return z/2
 
 # Pick an end state from all possible end states
 def pick_action(db, states):
@@ -144,32 +144,31 @@ def pick_action(db, states):
         else:
             rew = rew + db['R|NotUp'][1] * (b_height - clear - height)
             
-        
-
-
         # Any blocks open below - If so, add to expected reward
         op = open_below(state[0], state[1], fin_brd, 20)
-
-        opW = sigmoid(op)
-        rewW = sigmoid(rew)
-
-        rew = nnFunc(op, rew, opW, rewW, clear)
-
-        #rew = rew + op * db['R|Cover'][1]
+        rew = rew + op * db['R|Cover'][1]
         
+        bestShapes = best_shapes(db, 3)
+        bestShapesAvgRew = 0
+        # calculate avg reward of the 3 best shapes
+        for i in range(len(bestShapes)):
+            for j in range(3):
+                bestShapesAvgRew = bestShapesAvgRew + db[bestShapes[i]][1]
+        bestShapesAvgRew = bestShapesAvgRew/len(bestShapes)
+
+        # test of very simple NN func defined above
+        rew = nnFunc(rew, bestShapesAvgRew, sigmoid(rew), sigmoid(bestShapesAvgRew), sigmoid(np.random.randint(1, 100)))
+
+
         # Add all average rewards and return    
-        #rew = rew + get_reward_avg(state[0], state[1], reward_brd)
-
-        # nn test
-
+        # rew = rew + get_reward_avg(state[0], state[1], reward_brd)
         
         # If end reward is greater than previous reward, set equal to the state and current reward    
         if rew > end_rew:
             end, end_rew = state, rew
     
     return end
-
-
+    
 # gets the average reward from group of blocks
 def get_reward_avg(anchor, shape, board):
     x , y = anchor[0], anchor[1]
@@ -248,7 +247,7 @@ def update_db(db, reward, shape, board, direc, l_clear, cover, success):
     if cover:
         db['R|Cover'][0], db['R|Cover'][1] = online_mean(db, 'R|Cover', reward)
     
-    # Update reward based on lines cleared    
+    # Update reward based on shape and rotation    
     sh_name, rot = find_shape_name(shape)
     if sh_name is not None:
         tag = 'R|' + sh_name + '_' + str(rot)
@@ -290,6 +289,22 @@ def online_mean(db, tag, reward):
     r = r + (1/n) * (reward - r)
     return n, r
 
+def best_shapes(db, n):
+    best = []
+    shape_names = ['T', 'J', 'L', 'Z', 'S', 'I', 'O']
+    for i in range(n):
+        shp = 'R|T_1'
+        mx = 0
+        for s in shape_names:
+            for j in range(1, 5):
+                nm = 'R|' + s + '_' + str(j)
+                if db[nm][1] > mx and nm not in best:
+                    shp = nm
+                    
+        best.append(shp)
+    
+    return best
+
 def board_means(db, brd_env, r):
     brd = db['Board']
     for i in range(10):
@@ -318,7 +333,8 @@ def grab_db():
                 'R|S_1':[0,0],'R|S_2':[0,0],'R|S_3':[0,0],'R|S_4':[0,0],
                 'R|Z_1':[0,0],'R|Z_2':[0,0],'R|Z_3':[0,0],'R|Z_4':[0,0],
                 'R|I_1':[0,0],'R|I_2':[0,0],'R|I_3':[0,0],'R|I_4':[0,0],
-                'R|O_1':[0,0],'R|O_2':[0,0],'R|O_3':[0,0],'R|O_4':[0,0],}
+                'R|O_1':[0,0],'R|O_2':[0,0],'R|O_3':[0,0],'R|O_4':[0,0],
+                'Best_Shapes':[]}
 
 def play_again():
    

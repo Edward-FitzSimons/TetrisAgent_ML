@@ -103,9 +103,11 @@ def play_game(spectate):
     db['Best_Shapes'] = best_shapes(db, 3)
     return db
 
+# sigmoid function
 def sigmoid(x):
     return 1.0/(1.0 + np.exp(-x)) 
 
+# NN function with very basic weight and bias additives
 def nnFunc(x, y, xw, yw, b): 
     z = x*xw + y*yw + b 
     return z/2
@@ -148,15 +150,17 @@ def pick_action(db, states):
         op = open_below(state[0], state[1], fin_brd, 20)
         rew = rew + op * db['R|Cover'][1]
         
+        #retrieve best number of shapes, store name of db entry in list bestShapes
         bestShapes = best_shapes(db, 3)
-        bestShapesAvgRew = 0
+
         # calculate avg reward of the 3 best shapes
+        bestShapesAvgRew = 0
         for i in range(len(bestShapes)):
             for j in range(3):
                 bestShapesAvgRew = bestShapesAvgRew + db[bestShapes[i]][1]
         bestShapesAvgRew = bestShapesAvgRew/len(bestShapes)
 
-        # test of very simple NN func defined above
+        # test of very simple NN func defined above, commented out rew calculation below for this fcn
         rew = nnFunc(rew, bestShapesAvgRew, sigmoid(rew), sigmoid(bestShapesAvgRew), sigmoid(np.random.randint(1, 100)))
 
 

@@ -16,6 +16,18 @@ from engine import TetrisEngine
 
 ############ Constants #############
 SPEED = 1
+ERR_OUT = False
+
+SHAPES = {
+    'T': [(0, 0), (-1, 0), (1, 0), (0, -1)],
+    'J': [(0, 0), (-1, 0), (0, -1), (0, -2)],
+    'L': [(0, 0), (1, 0), (0, -1), (0, -2)],
+    'Z': [(0, 0), (-1, 0), (0, -1), (1, -1)],
+    'S': [(0, 0), (-1, -1), (0, -1), (1, 0)],
+    'I': [(0, 0), (0, -1), (0, -2), (0, -3)],
+    'O': [(0, 0), (0, -1), (-1, 0), (-1, -1)],
+    }
+SHAPE_NAMES = ['T', 'J', 'L', 'Z', 'S', 'I', 'O']
 
 # For greedy alg
 E = .05
@@ -100,6 +112,7 @@ def play_game(spectate):
                            b_height - prev_height, cleared, cover, success)
             
     db['Value'].append(value)
+    db['BEST_SHAPES'] = best_shapes(db)
     return db
 
 # Pick an end state from all possible end states
@@ -111,6 +124,7 @@ def pick_action(db, states):
     # Get Value board to check against anchors
     reward_brd = db['Board']
     b_height = env.block_height
+    shapes = db["BEST_SHAPES"]
     
     # Cycle and compare
     end = states[0]
@@ -118,36 +132,93 @@ def pick_action(db, states):
     for state in states:        
         
         if will_stack(state[0], state[1], dummy_brd, env.height): continue;
-        
-        rew = 0
         fin_brd, height = apply_shape(state[0], state[1], dummy_brd)
         
-        #Number of lines that can be cleared and reward
-        clear = can_clear(fin_brd)
-        for i in range(clear, 0, -1):
-            tag_clear = 'R|Lines_Cleared_' + str(clear)
-            if tag_clear in db:
-                rew = rew + db[tag_clear][1]
-                break
-            
-        # Did we reaise or lower the block height?
-        if height - clear > b_height:
-            rew = rew + db['R|Up'][1] * (height - clear - b_height)
-        else:
-            rew = rew + db['R|NotUp'][1] * (b_height - clear - height)
-            
-        # Any blocks open below - If so, add to expected reward
-        op = open_below(state[0], state[1], fin_brd, 20)
-        rew = rew + op * db['R|Cover'][1]
+        rew, n_height= expected_rew(db, state, fin_brd, height, b_height, reward_brd)
         
-        # Add all average rewards and return    
-        rew = rew + get_reward_avg(state[0], state[1], reward_brd)
+        if len(shapes) > 0:
+            rew += q_learning(fin_brd, shapes, n_height, db)
         
         # If end reward is greater than previous reward, set equal to the state and current reward    
         if rew > end_rew:
             end, end_rew = state, rew
     
     return end
+
+def q_learning(board, shapes, o_height, db):
+    
+    rew = 0
+    #for n in shapes:
+    shp = find_shape(shapes[0])
+    states = get_q_ends(board, shp, db)
+    e_r = 0
+    
+    for st in states:
+        
+        fin_brd, height = apply_shape(st[0], st[1], board)
+        
+        r, _ = expected_rew(db, st, fin_brd, height, o_height, db['Board'])
+        
+        if r > e_r:
+            r = e_r
+    rew += r
+    
+    return rew
+
+def get_q_ends(board, shape, db):
+    
+    states = []
+    for i in range(10):
+        #iterate through rotations
+        j = 19
+        an = [i, j]
+        while is_occupied(shape, an, board) and j >= 0:
+            j = j - 1
+            an[1] = j
+                
+        if j > 0:
+            states.append([an, shape])
+                
+    return states
+
+def is_occupied(shape, anchor, board):
+    for i, j in shape:
+        x, y = anchor[0] + i, anchor[1] + j
+        if y < 0:
+            continue
+        if x < 0 or x >= 10 or y >= 20 or board[x, y]:
+            return True
+    return False
+
+def expected_rew(db, state, fin_brd, height, old_height, r_brd):
+    
+
+    rew = 0
+    
+    if ERR_OUT: error_out(brd_str(fin_brd))
+        
+    #Number of lines that can be cleared and reward
+    clear = can_clear(fin_brd)
+    for i in range(clear, 0, -1):
+        tag_clear = 'R|Lines_Cleared_' + str(clear)
+        if tag_clear in db:
+            rew = rew + db[tag_clear][1]
+            break
+            
+    # Did we reaise or lower the block height?
+    if height - clear > old_height:
+        rew = rew + db['R|Up'][1] * (height - clear - old_height)
+    else:
+        rew = rew + db['R|NotUp'][1] * (old_height - clear - height)
+        
+    # Any blocks open below - If so, add to expected reward
+    op = open_below(state[0], state[1], fin_brd, 20)
+    rew = rew + op * db['R|Cover'][1]
+    
+    # Add all average rewards and return    
+    rew = rew + get_reward_avg(state[0], state[1], r_brd)
+    
+    return rew, height - clear
     
 # gets the average reward from group of blocks
 def get_reward_avg(anchor, shape, board):
@@ -242,24 +313,25 @@ def update_db(db, reward, shape, board, direc, l_clear, cover, success):
 
 # Finds the name, including number of clockwise rotations, of a shape
 def find_shape_name(shape):
-    shapes = {
-    'T': [(0, 0), (-1, 0), (1, 0), (0, -1)],
-    'J': [(0, 0), (-1, 0), (0, -1), (0, -2)],
-    'L': [(0, 0), (1, 0), (0, -1), (0, -2)],
-    'Z': [(0, 0), (-1, 0), (0, -1), (1, -1)],
-    'S': [(0, 0), (-1, -1), (0, -1), (1, 0)],
-    'I': [(0, 0), (0, -1), (0, -2), (0, -3)],
-    'O': [(0, 0), (0, -1), (-1, 0), (-1, -1)],
-    }
-    shape_names = ['T', 'J', 'L', 'Z', 'S', 'I', 'O']
-    for n in shape_names:
-        sh = shapes[n]
+    
+    for n in SHAPE_NAMES:
+        sh = SHAPES[n]
         for r in range(1,4):
             if np.array_equal(shape, sh):
                 return n, r
             sh = [(-j, i) for i, j in sh]
             
     return None, 0
+
+def find_shape(name):
+    
+    shape = SHAPES[name[2]]
+    rot = int(name[4])
+    
+    for i in range(1, rot):
+        shape = [(-j, i) for i, j in shape]
+    
+    return shape
 
 def online_mean(db, tag, reward):
     if tag not in db:
@@ -280,6 +352,22 @@ def board_means(db, brd_env, r):
     
     return brd
 
+def best_shapes(db):
+    
+    shapes = []
+    
+    for j in range(3):
+        shp, r = "R|T_1", -100
+        for name in SHAPE_NAMES:
+            for i in range(1,5):
+                n = 'R|' + name + '_' + str(i)
+                if db[n][1] > r and n not in shapes:
+                    shp = n
+                    r = db[n][1]
+        shapes.append(shp)
+        
+    return shapes
+
 def grab_db():
     # Initialize the database
     
@@ -297,7 +385,8 @@ def grab_db():
                 'R|S_1':[0,0],'R|S_2':[0,0],'R|S_3':[0,0],'R|S_4':[0,0],
                 'R|Z_1':[0,0],'R|Z_2':[0,0],'R|Z_3':[0,0],'R|Z_4':[0,0],
                 'R|I_1':[0,0],'R|I_2':[0,0],'R|I_3':[0,0],'R|I_4':[0,0],
-                'R|O_1':[0,0],'R|O_2':[0,0],'R|O_3':[0,0],'R|O_4':[0,0],}
+                'R|O_1':[0,0],'R|O_2':[0,0],'R|O_3':[0,0],'R|O_4':[0,0],
+                'BEST_SHAPES':[]}
 
 def play_again():
    
@@ -339,6 +428,28 @@ def getopts(argv):
         argv = argv[1:]  # Reduce the argument list by copying it starting from index 1.
             
     return opts
+
+def error_out(err):
+    
+    try:
+        fw = open("error_out.txt", 'a')
+        fw.write(err)
+    except Exception as e:
+        fw = open("error_out.txt", 'a')
+        fw.write(err)
+
+def brd_str(board):
+    brd = "+----------+\n"
+    
+    for y in range(20):
+        brd += "|"
+        for x in range(10):
+            if board[x][y] != 0: brd += "#"
+            else: brd += " "
+        brd += "|\n"
+        
+    brd += "+----------+\n"
+    return brd
 
 # Arguments for agent.py:
 # -s: spectate, no variable just flag

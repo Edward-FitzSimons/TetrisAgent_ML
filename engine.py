@@ -256,10 +256,13 @@ class TetrisEngine:
             for r in range(4):
                 j = self.height
                 an = [i, j]
-                while is_occupied(shp, an, brd):
+                while is_occupied(shp, an, brd) and j >= 0:
                    j = j - 1
                    an[1] = j
-                states.append([an, shp])
-                if r < 4: shp, an = rotate_right(shp, an, brd)
+                
+                if j > 0:
+                    states.append([an, shp])
+                
+                if r < 4: shp = rotated(shp)
         
         return states

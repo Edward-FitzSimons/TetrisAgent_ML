@@ -22,6 +22,7 @@ Our neural network layout consists of 213 input nodes, and only 7 output nodes d
 	* The size of the hidden layer is still undetermined. Current nodes numbers range from 500 - 1000, which will help with first round reduction.
 3) Output Layer
 	* Simply determines which moves the agent should take, given all previous assumptions.
+![alt text](/pictures/NNLayout.PNG "Neural Network Layout")
 
 ## Play Tetris
 Play games and accumulate a data set for a supervised learning algorithm to train on. The database stores a dictionary of tuples containing the mean average of the rewards and other values.

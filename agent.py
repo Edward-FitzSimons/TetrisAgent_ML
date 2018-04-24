@@ -16,6 +16,7 @@ from engine import TetrisEngine
 
 ############ Constants #############
 SPEED = 1
+FILE = 'training_data_random.npy'
 
 # For greedy alg
 E = .05
@@ -53,7 +54,7 @@ def play_game(spectate):
             
             # Select an end states at random
             # E-Greedy
-            if rnd.randint(1, 100) < 100 * E:
+            if True: #rnd.randint(1, 100) < 100 * E:
                 end = states[rnd.randint(0, len(states) - 1)]
             else:
                 end = pick_action(db, states)
@@ -286,7 +287,7 @@ def grab_db():
     # Initialize the database
     
     try:
-        fr = open('training_data.npy', 'rb')
+        fr = open(FILE, 'rb')
         return np.load(fr).item()
     except Exception as e:
         brd = np.zeros((10,20,2))
@@ -378,12 +379,12 @@ if __name__ == '__main__':
         save = runAuto > 0 or save_game()
         if save:
             try:
-                fw = open('training_data.npy', 'wb')
+                fw = open(FILE, 'wb')
                 np.save(fw, db)
                 print('Training set updated. {}/{}'.format(curgame, totalgames))
             except Exception as e:
                 print('no training file exists. Creating one now...')
-                fw = open('training_data.npy', 'wb')
+                fw = open(FILE, 'wb')
                 print('Saving {0} moves...'.format(len(db)))
                 np.save(fw, db)
                 

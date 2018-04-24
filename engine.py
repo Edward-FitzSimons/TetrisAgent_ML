@@ -210,7 +210,7 @@ class TetrisEngine:
             else:
                 cover = open_below(self.shape, self.anchor, self.board, self.height)
                 if cover > 0:
-                    reward -= 2 * cover
+                    reward -= 5
                 
                 self._new_piece()
                 new = True

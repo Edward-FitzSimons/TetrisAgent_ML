@@ -18,7 +18,7 @@ from engine import TetrisEngine
 SPEED = 1
 
 # For greedy alg
-E = .05
+E = .00
 
 def play_game(spectate):
     
@@ -53,7 +53,7 @@ def play_game(spectate):
             
             # Select an end states at random
             # E-Greedy
-            if rnd.randint(1, 100) < 100 * E:
+            if True: #rnd.randint(1, 100) < 100 * E:
                 end = states[rnd.randint(0, len(states) - 1)]
             else:
                 end = pick_action(db, states)
@@ -62,7 +62,7 @@ def play_game(spectate):
             # Game Step
             # Step until we reach our desired states
             new = False # whether or not we've dropped a new block
-            success = False # whether or not we could get to the end state
+            failed = False # whether or not we could get to the end state
             reward = 0 # reward of this set of actions
             done = False # whether or not we've lost
             acts = [] # the set of actions
@@ -93,11 +93,12 @@ def play_game(spectate):
                             + '\nScore: ' + str(env.score))
                 value += reward
                 
-                if end[0][0] == env.anchor[0] and np.array_equal(end[1], env.shape):
-                    success = True
+                if end[0][0] != env.anchor[0] and np.array_equal(end[1], env.shape):
+                    failed = True
+                    #reward -= 30
        
             db = update_db(db, reward, end[1], env.board,
-                           b_height - prev_height, cleared, cover, success)
+                           b_height - prev_height, cleared, cover, failed)
             
     db['Value'].append(value)
     return db
@@ -115,9 +116,10 @@ def pick_action(db, states):
     # Cycle and compare
     end = states[0]
     end_rew = -10
-    for state in states:        
+    for state in states:       
         
-        if will_stack(state[0], state[1], dummy_brd, env.height): continue;
+        if will_stack(state[0], state[1], dummy_brd, env.height): 
+            continue
         
         rew = 0
         fin_brd, height = apply_shape(state[0], state[1], dummy_brd)
@@ -203,7 +205,7 @@ def apply_shape(anchor, shape, board):
     
     return brd, 20 - top
 
-def update_db(db, reward, shape, board, direc, l_clear, cover, success):
+def update_db(db, reward, shape, board, direc, l_clear, cover, failed):
     # Slot 0 = Number of entries, Slot 1 = the actual entries
     
     # Update general reward
@@ -220,8 +222,8 @@ def update_db(db, reward, shape, board, direc, l_clear, cover, success):
         db['R|NotUp'][0], db['R|NotUp'][1] = online_mean(db, 'R|NotUp', reward)
         
     # Update reward based on whether or not move was completed
-    if success:
-        db['R|Success'][0], db['R|Success'][1] = online_mean(db, 'R|Success', reward)
+    if failed:
+        db['R|Failed'][0], db['R|Failed'][1] = online_mean(db, 'R|Failed', reward)
         
     # Update reward based on whether or not we've covered any open spaces
     if cover:
@@ -290,7 +292,7 @@ def grab_db():
         brd = np.zeros((10,20,2))
         # 'Key': [n, avg]
         return {'Board': brd, 'Reward':[0,0], 'Value':[],
-                'R|Up':[0,0], 'R|NotUp':[0,0], 'R|Success':[0,0], 'R|Cover':[0,0],
+                'R|Up':[0,0], 'R|NotUp':[0,0], 'R|Failed':[0,0], 'R|Cover':[0,0],
                 'R|T_1':[0,0],'R|T_2':[0,0],'R|T_3':[0,0],'R|T_4':[0,0],
                 'R|J_1':[0,0],'R|J_2':[0,0],'R|J_3':[0,0],'R|J_4':[0,0],
                 'R|L_1':[0,0],'R|L_2':[0,0],'R|L_3':[0,0],'R|L_4':[0,0],

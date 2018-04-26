@@ -16,7 +16,7 @@ from engine import TetrisEngine
 
 ############ Constants #############
 SPEED = 1
-FILE = 'training_data_random.npy'
+FILE = 'training_data_no_greedy.npy'
 
 # For greedy alg
 E = .05
@@ -54,7 +54,7 @@ def play_game(spectate):
             
             # Select an end states at random
             # E-Greedy
-            if True: #rnd.randint(1, 100) < 100 * E:
+            if False: #rnd.randint(1, 100) < 100 * E:
                 end = states[rnd.randint(0, len(states) - 1)]
             else:
                 end = pick_action(db, states)
